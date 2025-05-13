@@ -1,0 +1,7 @@
+[package]
+name = "gb_frontend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gb_core = { path = "../gb_core" }
