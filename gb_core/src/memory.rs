@@ -5,9 +5,12 @@ const WRAM_START: u16 = 0xC000;
 const OAM_START: u16 = 0xFE00;
 const IO_REGISTERS_START: u16 = 0xFF00;
 const HRAM_START: u16 = 0xFF80;
+pub const IF: u16 = 0xFF0F;
+pub const IE: u16 = 0xFFFF;
 
 pub struct MemoryBus {
     // memory: Box<[u8; 0x10000]>,
+    // 0x0000 - 0x00FF is Boot ROM, write to this area is ignored
     cartridge: Option<Box<dyn Cartridge>>, // 0x0000 - 0x7FFF ROM, A000 - BFFF RAM
     vram: Box<[u8; 0x2000]>,               // 0x8000 - 0x9FFF (Video RAM, stores tile data)
     wram: Box<[u8; 0x2000]>,               // 0xC000 - 0xDFFF

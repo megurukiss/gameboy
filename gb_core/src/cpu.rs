@@ -1,4 +1,4 @@
-use crate::memory::MemoryBus;
+use crate::memory::*;
 use crate::time::Timer;
 use std::time::{Duration, Instant};
 
@@ -16,6 +16,8 @@ pub struct CPU {
     pub PC: u16, // Program Counter
     pub memory_bus: MemoryBus,
     pub timer: Timer,
+    pub ime: bool,
+    pub is_halted: bool,
 }
 
 struct ALU; // Arithmetic Logic Unit
@@ -36,6 +38,8 @@ impl CPU {
             PC: 0,
             memory_bus: MemoryBus::new(),
             timer: Timer::new(),
+            ime: false,
+            is_halted: false,
         }
     }
 
@@ -114,6 +118,23 @@ impl CPU {
         self.F & 0b0001_0000 != 0
     }
 
+    pub fn set_ime(&mut self, value: bool) {
+        self.ime = value;
+    }
+    pub fn ime(&mut self) -> bool {
+        self.ime
+    }
+
+    // get IF
+    pub fn IF(&self) -> u8 {
+        self.memory_bus.read_byte(IF)
+    }
+
+    // get IE
+    pub fn IE(&self) -> u8 {
+        self.memory_bus.read_byte(IE)
+    }
+
     // compute elasped time and call update_cpu
     pub fn update(&mut self) {
         let now = Instant::now();
@@ -137,7 +158,7 @@ impl CPU {
         let freq = self.timer.get_frequency() as f64;
         let scale = self.timer.get_scale() as f64;
         // calculate cycles
-        let cycles = (elapsed_time * freq * scale) as u64;
+        let cycles = (elapsed_time * freq * scale) as u64; // clock cycles
         let end_cycles = self.timer.cycles_counter + cycles;
         while self.timer.cycles_counter < end_cycles {
             // execute instruction and increment cycles
@@ -150,6 +171,15 @@ impl CPU {
     // be careful about CB prefix, if CB prefix encountered, fetch the next bit manipulation opcode.
     fn tick(&mut self) -> u64 {
         // TODO: Implement fetch-decode-execute cycle
+        if !self.is_halted {
+            // fetch and execute instruction
+        } else {
+            // cpu halted
+        }
+
+        // check and handle interrupts
+        // unset the is_halted when interrupt
+        // when is_halted is set and ime = false, interrupt handler is not called.
         0
     }
 }

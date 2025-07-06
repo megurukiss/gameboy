@@ -86,7 +86,7 @@ impl OPCode {
     }
 
     // TODO: return machine cycles for each opcode
-    pub fn exec(cpu: &mut CPU, opcode: u8) {
+    pub fn exec(cpu: &mut CPU, opcode: u8) -> u8 {
         let opcode_bits = OPCode::parse_bits_u8(opcode);
         match opcode_bits {
             // --- 8-bit loads ---
@@ -168,6 +168,124 @@ impl OPCode {
             // LD HL, SP+e: 0b11111000 (0xF8) (LDHL SP, e)
             [1, 1, 1, 1, 1, 0, 0, 0] => OPCode::op_11111000(cpu),
 
+            // --- add ---
+
+            // ADD (HL) 0b10000110
+            [1, 0, 0, 0, 0, 1, 1, 0] => OPCode::op_10000110(cpu),
+
+            // ADD n: 0b11000110
+            [1, 1, 0, 0, 0, 1, 1, 0] => OPCode::op_11000110(cpu),
+
+            // ADC (HL) 0b10001110
+            [1, 0, 0, 0, 1, 1, 1, 0] => OPCode::op_10001110(cpu),
+
+            // ADC n 0b11001110
+            [1, 1, 0, 0, 1, 1, 1, 0] => OPCode::op_11001110(cpu),
+
+            //ADD r: 0b10000xxx
+            [1, 0, 0, 0, 0, _, _, _] => OPCode::op_10000xxx(cpu, &opcode_bits),
+
+            // ADC r 0b10001xxx
+            [1, 0, 0, 0, 1, _, _, _] => OPCode::op_10001xxx(cpu, &opcode_bits),
+
+            // --- sub ---
+
+            // SUB (HL) 0b10010110
+            [1, 0, 0, 1, 0, 1, 1, 0] => OPCode::op_10010110(cpu),
+
+            // SUB n 0b11010110
+            [1, 1, 0, 1, 0, 1, 1, 0] => OPCode::op_11010110(cpu),
+
+            // SBC (HL) 0b10011110
+            [1, 0, 0, 1, 1, 1, 1, 0] => OPCode::op_10011110(cpu),
+
+            // SBC n 0b11011110
+            [1, 1, 0, 1, 1, 1, 1, 0] => OPCode::op_11011110(cpu),
+
+            // SBC r 0b10011xxx
+            [1, 0, 0, 1, 1, _, _, _] => OPCode::op_10011xxx(cpu, &opcode_bits),
+
+            // SUB r 0b10010xxx
+            [1, 0, 0, 1, 0, _, _, _] => OPCode::op_10010xxx(cpu, &opcode_bits),
+
+            // --- logical ---
+
+            // AND (HL) 0b10100110
+            [1, 0, 1, 0, 0, 1, 1, 0] => OPCode::op_10100110(cpu),
+
+            // AND n 0b11100110
+            [1, 1, 1, 0, 0, 1, 1, 0] => OPCode::op_11100110(cpu),
+
+            // OR (HL) 0b10110110
+            [1, 0, 1, 1, 0, 1, 1, 0] => OPCode::op_10110110(cpu),
+
+            // OR n 0b11110110
+            [1, 1, 1, 1, 0, 1, 1, 0] => OPCode::op_11110110(cpu),
+
+            // XOR (HL) 0b10101110
+            [1, 0, 1, 0, 1, 1, 1, 0] => OPCode::op_10101110(cpu),
+            // XOR n 0b11101110
+            [1, 1, 1, 0, 1, 1, 1, 0] => OPCode::op_11101110(cpu),
+
+            // XOR r 0b10101xxx
+            [1, 0, 1, 0, 1, _, _, _] => OPCode::op_10101xxx(cpu, &opcode_bits),
+
+            // OR r  0b10110xxx
+            [1, 0, 1, 1, 0, _, _, _] => OPCode::op_10110xxx(cpu, &opcode_bits),
+
+            // AND r 0b10100xxx
+            [1, 0, 1, 0, 0, _, _, _] => OPCode::op_10100xxx(cpu, &opcode_bits),
+
+            // --- other ALU ---
+
+            // CP (HL) 0b10011110
+            [1, 0, 0, 1, 1, 1, 1, 0] => OPCode::op_10011110(cpu),
+
+            // CP n 0b11111110
+            [1, 1, 0, 1, 1, 1, 1, 0] => OPCode::op_11111110(cpu),
+
+            // INC (HL) 0b00110100
+            [0, 0, 1, 1, 0, 1, 0, 0] => OPCode::op_00110100(cpu),
+
+            // DEC (HL) 0b00110101
+            [0, 0, 1, 1, 0, 1, 0, 1] => OPCode::op_00110101(cpu),
+
+            // CCF 0b00111111
+            [0, 0, 1, 1, 1, 1, 1, 1] => OPCode::op_00111111(cpu),
+
+            // SCF 0b00110111
+            [0, 0, 1, 1, 0, 1, 1, 1] => OPCode::op_00110111(cpu),
+
+            // DAA 0b00100111
+            [0, 0, 1, 0, 0, 1, 1, 1] => OPCode::op_00100111(cpu),
+
+            // CPL 0b00101111
+            [0, 0, 1, 0, 1, 1, 1, 1] => OPCode::op_00101111(cpu),
+
+            // CP r 0b10111xxx
+            [1, 0, 1, 1, 1, _, _, _] => OPCode::op_10111xxx(cpu, &opcode_bits),
+
+            // INC r 0b00xxx100
+            [0, 0, _, _, _, 1, 0, 0] => OPCode::op_00xxx100(cpu, &opcode_bits),
+
+            // DEC r 0b00xxx101
+            [0, 0, _, _, _, 1, 0, 1] => OPCode::op_00xxx101(cpu, &opcode_bits),
+
+            // --- 16-bit ALU ---
+
+            // ADD SP, e  11101000
+            [1, 1, 1, 0, 1, 0, 0, 0] => OPCode::op_11101000(cpu),
+
+            // INC rr 0b00xx0011
+            [0, 0, _, _, 0, 0, 1, 1] => OPCode::op_00xx0011(cpu, &opcode_bits),
+
+            // DEC rr 0b00xx1011
+            [0, 0, _, _, 1, 0, 1, 1] => OPCode::op_00xx1011(cpu, &opcode_bits),
+
+            // ADD HL, rr 0b00xx1001
+            [0, 0, _, _, 1, 0, 0, 1] => OPCode::op_00xx1001(cpu, &opcode_bits),
+
+            // --- control flow ---
             _ => panic!("Invalid opcode"),
         }
     }
