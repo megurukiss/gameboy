@@ -301,7 +301,7 @@ impl OPCode {
         1
     }
 
-    // CP (HL) 0b10011110
+    // CP (HL) 10111110
     pub(super) fn op_10111110(cpu: &mut CPU) -> u8 {
         let address = cpu.HL();
         let value = cpu.memory_bus.read_byte(address);

@@ -1,4 +1,5 @@
 use crate::memory::*;
+use crate::opcodes::OPCode;
 use crate::time::Timer;
 use std::time::{Duration, Instant};
 
@@ -174,6 +175,20 @@ impl CPU {
         // TODO: Implement fetch-decode-execute cycle
         if !self.is_halted {
             // fetch and execute instruction
+            // fetch byte from pc
+            let (opcode, is_cb) = {
+                let first_byte = self.memory_bus.read_byte(self.PC);
+                self.PC += 1;
+                // if the first byte is 0xcb, then its a bit opcode
+                if first_byte == 0xcb {
+                    let second_byte = self.memory_bus.read_byte(self.PC);
+                    self.PC += 1;
+                    (second_byte, true)
+                } else {
+                    (first_byte, false)
+                }
+            };
+            OPCode::exec(self, opcode, is_cb);
         } else {
             // cpu halted
         }
