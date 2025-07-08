@@ -4,20 +4,21 @@ use std::time::{Duration, Instant};
 
 pub struct CPU {
     // Registers
-    pub A: u8, // Accumulator
-    pub F: u8, // Flags
-    pub B: u8,
-    pub C: u8,
-    pub D: u8,
-    pub E: u8,
-    pub H: u8,
-    pub L: u8,
-    pub SP: u16, // Stack Pointer
-    pub PC: u16, // Program Counter
+    pub a: u8, // Flags
+    pub b: u8, 
+    pub c: u8,
+    pub d: u8,
+    pub e: u8,
+    // Accumulator
+    pub f: u8,
+    pub h: u8,
+    pub l: u8,
+    // Stack Pointer
+    pub pc: u16, pub sp: u16, pub ime: bool,
+    pub is_halted: bool,
+    // Program Counter
     pub memory_bus: MemoryBus,
     pub timer: Timer,
-    pub ime: bool,
-    pub is_halted: bool,
 }
 
 struct ALU; // Arithmetic Logic Unit
@@ -26,16 +27,16 @@ struct IDU; // Instruction Decode Unit
 impl CPU {
     pub fn new() -> Self {
         CPU {
-            A: 0,
-            F: 0,
-            B: 0,
-            C: 0,
-            D: 0,
-            E: 0,
-            H: 0,
-            L: 0,
-            SP: 0,
-            PC: 0,
+            a: 0,
+            f: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            h: 0,
+            l: 0,
+            sp: 0,
+            pc: 0,
             memory_bus: MemoryBus::new(),
             timer: Timer::new(),
             ime: false,
@@ -43,79 +44,79 @@ impl CPU {
         }
     }
 
-    pub fn BC(&self) -> u16 {
-        (self.B as u16) << 8 | self.C as u16
+    pub fn bc(&self) -> u16 {
+        (self.b as u16) << 8 | self.c as u16
     }
 
-    pub fn set_BC(&mut self, value: u16) {
-        self.B = ((value & 0xFF00) >> 8) as u8;
-        self.C = (value & 0x00FF) as u8;
+    pub fn set_bc(&mut self, value: u16) {
+        self.b = ((value & 0xFF00) >> 8) as u8;
+        self.c = (value & 0x00FF) as u8;
     }
 
-    pub fn DE(&self) -> u16 {
-        (self.D as u16) << 8 | self.E as u16
+    pub fn de(&self) -> u16 {
+        (self.d as u16) << 8 | self.e as u16
     }
 
-    pub fn set_DE(&mut self, value: u16) {
-        self.D = ((value & 0xFF00) >> 8) as u8;
-        self.E = (value & 0x00FF) as u8;
+    pub fn set_de(&mut self, value: u16) {
+        self.d = ((value & 0xFF00) >> 8) as u8;
+        self.e = (value & 0x00FF) as u8;
     }
 
     pub fn HL(&self) -> u16 {
-        (self.H as u16) << 8 | self.L as u16
+        (self.h as u16) << 8 | self.l as u16
     }
 
     pub fn set_HL(&mut self, value: u16) {
-        self.H = ((value & 0xFF00) >> 8) as u8;
-        self.L = (value & 0x00FF) as u8;
+        self.h = ((value & 0xFF00) >> 8) as u8;
+        self.l = (value & 0x00FF) as u8;
     }
 
     pub fn set_SP(&mut self, value: u16) {
-        self.SP = value;
+        self.sp = value;
     }
 
     // set flags
     pub fn set_Z(&mut self, value: bool) {
         match value {
-            true => self.F |= 0b1000_0000,
-            false => self.F &= 0b0111_1111,
+            true => self.f |= 0b1000_0000,
+            false => self.f &= 0b0111_1111,
         }
     }
     pub fn Z(&self) -> bool {
-        self.F & 0b1000_0000 != 0
+        self.f & 0b1000_0000 != 0
     }
 
     // N flag
     pub fn set_N(&mut self, value: bool) {
         match value {
-            true => self.F |= 0b0100_0000,
-            false => self.F &= 0b1011_1111,
+            true => self.f |= 0b0100_0000,
+            false => self.f &= 0b1011_1111,
         }
     }
     pub fn N(&self) -> bool {
-        self.F & 0b0100_0000 != 0
+        self.f & 0b0100_0000 != 0
     }
 
     // H flag
     pub fn set_H(&mut self, value: bool) {
         match value {
-            true => self.F |= 0b0010_0000,
-            false => self.F &= 0b1101_1111,
+            true => self.f |= 0b0010_0000,
+            false => self.f &= 0b1101_1111,
         }
     }
     pub fn H(&self) -> bool {
-        self.F & 0b0010_0000 != 0
+        self.f & 0b0010_0000 != 0
     }
 
     // C flag
     pub fn set_C(&mut self, value: bool) {
         match value {
-            true => self.F |= 0b0001_0000,
-            false => self.F &= 0b1110_1111,
+            true => self.f |= 0b0001_0000,
+            false => self.f &= 0b1110_1111,
         }
     }
     pub fn C(&self) -> bool {
-        self.F & 0b0001_0000 != 0
+        self.f & 0b0001_0000 != 0
     }
 
     pub fn set_ime(&mut self, value: bool) {

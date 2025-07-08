@@ -6,9 +6,9 @@ impl OPCode {
 
     // RLCA 00000111
     pub(super) fn cb_op_00000111(cpu: &mut CPU) -> u8 {
-        let value = cpu.A;
+        let value = cpu.a;
         let bit7 = value >> 7;
-        cpu.A = (value << 1) | bit7;
+        cpu.a = (value << 1) | bit7;
         cpu.set_C(bit7 == 1);
         cpu.set_N(false);
         cpu.set_H(false);
@@ -18,9 +18,9 @@ impl OPCode {
 
     // RRCA 00001111
     pub(super) fn cb_op_00001111(cpu: &mut CPU) -> u8 {
-        let value = cpu.A;
+        let value = cpu.a;
         let bit0 = value & 1;
-        cpu.A = (value >> 1) | (bit0 << 7);
+        cpu.a = (value >> 1) | (bit0 << 7);
         cpu.set_C(bit0 == 1);
         cpu.set_N(false);
         cpu.set_H(false);
@@ -30,7 +30,7 @@ impl OPCode {
 
     // RLA 00010111
     pub(super) fn cb_op_00010111(cpu: &mut CPU) -> u8 {
-        let value = cpu.A;
+        let value = cpu.a;
         let cflag = {
             if cpu.C() {
                 1u8
@@ -39,7 +39,7 @@ impl OPCode {
             }
         };
         let bit7 = value >> 7;
-        cpu.A = (value << 1) | cflag;
+        cpu.a = (value << 1) | cflag;
         cpu.set_C(bit7 == 1);
         cpu.set_N(false);
         cpu.set_H(false);
@@ -49,7 +49,7 @@ impl OPCode {
 
     // RRA 00011111
     pub(super) fn cb_op_00011111(cpu: &mut CPU) -> u8 {
-        let value = cpu.A;
+        let value = cpu.a;
         let cflag = {
             if cpu.C() {
                 1u8
@@ -58,7 +58,7 @@ impl OPCode {
             }
         };
         let bit0 = value & 1;
-        cpu.A = (value >> 1) | (cflag << 7);
+        cpu.a = (value >> 1) | (cflag << 7);
         cpu.set_C(bit0 == 1);
         cpu.set_N(false);
         cpu.set_H(false);

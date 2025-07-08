@@ -6,21 +6,21 @@ pub struct OPCode;
 impl OPCode {
     pub fn get_register_by_index<'a>(index: u8, cpu: &'a mut CPU) -> Result<&'a mut u8, Error> {
         match index {
-            0b111 => Ok(&mut cpu.A),
-            0b000 => Ok(&mut cpu.B),
-            0b001 => Ok(&mut cpu.C),
-            0b010 => Ok(&mut cpu.D),
-            0b011 => Ok(&mut cpu.E),
-            0b100 => Ok(&mut cpu.H),
-            0b101 => Ok(&mut cpu.L),
+            0b111 => Ok(&mut cpu.a),
+            0b000 => Ok(&mut cpu.b),
+            0b001 => Ok(&mut cpu.c),
+            0b010 => Ok(&mut cpu.d),
+            0b011 => Ok(&mut cpu.e),
+            0b100 => Ok(&mut cpu.h),
+            0b101 => Ok(&mut cpu.l),
             _ => Err(Error::OPCodeParseError),
         }
     }
 
     pub fn set_16b_register_by_index(index: u8, cpu: &mut CPU, value: u16) {
         match index {
-            0b00 => cpu.set_BC(value),
-            0b01 => cpu.set_DE(value),
+            0b00 => cpu.set_bc(value),
+            0b01 => cpu.set_de(value),
             0b10 => cpu.set_HL(value),
             0b11 => cpu.set_SP(value),
             _ => panic!("Invalid 16-bit register index"),
@@ -29,25 +29,25 @@ impl OPCode {
 
     pub fn get_16b_register_by_index(index: u8, cpu: &CPU) -> u16 {
         match index {
-            0b00 => cpu.BC(),
-            0b01 => cpu.DE(),
+            0b00 => cpu.bc(),
+            0b01 => cpu.de(),
             0b10 => cpu.HL(),
-            0b11 => cpu.SP,
+            0b11 => cpu.sp,
             _ => panic!("Invalid 16-bit register index"),
         }
     }
 
     pub fn fetch_opcode_u8(cpu: &mut CPU) -> Result<u8, Error> {
         // TODO: Implement address boundary check
-        let opcode = cpu.memory_bus.read_byte(cpu.PC);
-        cpu.PC += 1;
+        let opcode = cpu.memory_bus.read_byte(cpu.pc);
+        cpu.pc += 1;
         Ok(opcode)
     }
 
     pub fn fetch_opcode_u16(cpu: &mut CPU) -> Result<u16, Error> {
         // TODO: Implement address boundary check
-        let opcode = cpu.memory_bus.read_word(cpu.PC);
-        cpu.PC += 2;
+        let opcode = cpu.memory_bus.read_word(cpu.pc);
+        cpu.pc += 2;
         Ok(opcode)
     }
 
