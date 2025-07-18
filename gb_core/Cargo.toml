@@ -3,7 +3,15 @@ name = "gb_core"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "gb_core"
+path = "src/lib.rs"
+
 [dependencies]
-env_logger = "0.11.8"
-log = "0.4.27"
-test-log = "0.2.17"
+# Inherit the version from the root Cargo.toml
+log = { workspace = true }
+env_logger = { workspace = true }
+
+# You can keep dev-dependencies separate or also move them to the workspace
+[dev-dependencies]
+test-log = { workspace = true }

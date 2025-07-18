@@ -1,9 +1,7 @@
-use std::result;
-
-use crate::cpu::CPU;
+use crate::core::CPU;
 use crate::opcodes::opcode::OPCode;
 
-enum ALU_OP {
+enum ALUOP {
     ADD,
     SUB,
     INC,
@@ -13,9 +11,9 @@ enum ALU_OP {
     XOR,
 }
 
-fn ALU_helper(cpu: &mut CPU, op: ALU_OP, num1: u8, num2: u8, carry_in: u8) -> u8 {
+fn alu_helper(cpu: &mut CPU, op: ALUOP, num1: u8, num2: u8, carry_in: u8) -> u8 {
     let result = match op {
-        ALU_OP::ADD => {
+        ALUOP::ADD => {
             let intermediate = (num1 as u16)
                 .wrapping_add(num2 as u16)
                 .wrapping_add(carry_in as u16);
@@ -27,13 +25,13 @@ fn ALU_helper(cpu: &mut CPU, op: ALU_OP, num1: u8, num2: u8, carry_in: u8) -> u8
                 > 0x0F;
             let carry = intermediate > 0xFF;
 
-            cpu.set_Z(result == 0);
-            cpu.set_N(false);
-            cpu.set_H(half_carry);
-            cpu.set_C(carry);
+            cpu.set_z(result == 0);
+            cpu.set_n(false);
+            cpu.set_h(half_carry);
+            cpu.set_c(carry);
             result
         }
-        ALU_OP::SUB => {
+        ALUOP::SUB => {
             let intermediate = (num1 as i16)
                 .wrapping_sub(num2 as i16)
                 .wrapping_sub(carry_in as i16);
@@ -42,58 +40,57 @@ fn ALU_helper(cpu: &mut CPU, op: ALU_OP, num1: u8, num2: u8, carry_in: u8) -> u8
             let half_carry = (num1 & 0x0F) < (num2 & 0x0F) + carry_in;
             let carry = intermediate < 0;
 
-            cpu.set_Z(result == 0);
-            cpu.set_N(true);
-            cpu.set_H(half_carry);
-            cpu.set_C(carry);
+            cpu.set_z(result == 0);
+            cpu.set_n(true);
+            cpu.set_h(half_carry);
+            cpu.set_c(carry);
             result
         }
         // INC don't set carry flag
-        ALU_OP::INC => {
+        ALUOP::INC => {
             let intermediate = (num1 as u16).wrapping_add(1);
             let result = intermediate as u8;
 
             let half_carry = (num1 & 0x0F).wrapping_add(1) > 0x0F;
 
-            cpu.set_Z(result == 0);
-            cpu.set_N(false);
-            cpu.set_H(half_carry);
+            cpu.set_z(result == 0);
+            cpu.set_n(false);
+            cpu.set_h(half_carry);
             result
         }
-        ALU_OP::DEC => {
+        ALUOP::DEC => {
             let intermediate = (num1 as i16).wrapping_sub(1);
             let result = intermediate as u8;
             let half_carry = (num1 & 0x0F) == 0;
-            cpu.set_Z(result == 0);
-            cpu.set_N(true);
-            cpu.set_H(half_carry);
+            cpu.set_z(result == 0);
+            cpu.set_n(true);
+            cpu.set_h(half_carry);
             result
         }
-        ALU_OP::AND => {
+        ALUOP::AND => {
             let result = num1 & num2;
-            cpu.set_Z(result == 0);
-            cpu.set_N(false);
-            cpu.set_H(true);
-            cpu.set_C(false);
+            cpu.set_z(result == 0);
+            cpu.set_n(false);
+            cpu.set_h(true);
+            cpu.set_c(false);
             result
         }
-        ALU_OP::OR => {
+        ALUOP::OR => {
             let result = num1 | num2;
-            cpu.set_Z(result == 0);
-            cpu.set_N(false);
-            cpu.set_H(false);
-            cpu.set_C(false);
+            cpu.set_z(result == 0);
+            cpu.set_n(false);
+            cpu.set_h(false);
+            cpu.set_c(false);
             result
         }
-        ALU_OP::XOR => {
+        ALUOP::XOR => {
             let result = num1 ^ num2;
-            cpu.set_Z(result == 0);
-            cpu.set_N(false);
-            cpu.set_H(false);
-            cpu.set_C(false);
+            cpu.set_z(result == 0);
+            cpu.set_n(false);
+            cpu.set_h(false);
+            cpu.set_c(false);
             result
         }
-        _ => panic!("Not implemented"),
     };
     result
 }
@@ -111,15 +108,15 @@ impl OPCode {
         // cpu.set_N(false);
         // cpu.set_H(half_carry);
         // cpu.set_C(carry);
-        cpu.a = ALU_helper(cpu, ALU_OP::ADD, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::ADD, cpu.a, value, 0);
         1
     }
 
     // ADD (HL) 0b10000110
     pub(super) fn op_10000110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        cpu.a = ALU_helper(cpu, ALU_OP::ADD, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::ADD, cpu.a, value, 0);
         2
     }
 
@@ -127,7 +124,7 @@ impl OPCode {
     pub(super) fn op_11000110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        cpu.a = ALU_helper(cpu, ALU_OP::ADD, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::ADD, cpu.a, value, 0);
         2
     }
 
@@ -135,17 +132,17 @@ impl OPCode {
     pub(super) fn op_10001xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[5..]);
         let value = *OPCode::get_register_by_index(index, cpu).unwrap();
-        let carry = if cpu.C() { 1 } else { 0 };
-        cpu.a = ALU_helper(cpu, ALU_OP::ADD, cpu.a, value, carry);
+        let carry = if cpu.c() { 1 } else { 0 };
+        cpu.a = alu_helper(cpu, ALUOP::ADD, cpu.a, value, carry);
         1
     }
 
     // ADC (HL) 0b10001110
     pub(super) fn op_10001110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        let carry = if cpu.C() { 1 } else { 0 };
-        cpu.a = ALU_helper(cpu, ALU_OP::ADD, cpu.a, value, carry);
+        let carry = if cpu.c() { 1 } else { 0 };
+        cpu.a = alu_helper(cpu, ALUOP::ADD, cpu.a, value, carry);
         2
     }
 
@@ -153,8 +150,8 @@ impl OPCode {
     pub(super) fn op_11001110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        let carry = if cpu.C() { 1 } else { 0 };
-        cpu.a = ALU_helper(cpu, ALU_OP::ADD, cpu.a, value, carry);
+        let carry = if cpu.c() { 1 } else { 0 };
+        cpu.a = alu_helper(cpu, ALUOP::ADD, cpu.a, value, carry);
         2
     }
 }
@@ -166,15 +163,15 @@ impl OPCode {
     pub(super) fn op_10010xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[5..]);
         let value = *OPCode::get_register_by_index(index, cpu).unwrap();
-        cpu.a = ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::SUB, cpu.a, value, 0);
         1
     }
 
     // SUB (HL) 0b10010110
     pub(super) fn op_10010110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        cpu.a = ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::SUB, cpu.a, value, 0);
         2
     }
 
@@ -182,7 +179,7 @@ impl OPCode {
     pub(super) fn op_11010110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        cpu.a = ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::SUB, cpu.a, value, 0);
         2
     }
 
@@ -190,17 +187,17 @@ impl OPCode {
     pub(super) fn op_10011xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[5..]);
         let value = *OPCode::get_register_by_index(index, cpu).unwrap();
-        let carry = if cpu.C() { 1 } else { 0 };
-        cpu.a = ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, carry);
+        let carry = if cpu.c() { 1 } else { 0 };
+        cpu.a = alu_helper(cpu, ALUOP::SUB, cpu.a, value, carry);
         1
     }
 
     // SBC (HL) 0b10011110
     pub(super) fn op_10011110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        let carry = if cpu.C() { 1 } else { 0 };
-        cpu.a = ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, carry);
+        let carry = if cpu.c() { 1 } else { 0 };
+        cpu.a = alu_helper(cpu, ALUOP::SUB, cpu.a, value, carry);
         2
     }
 
@@ -208,8 +205,8 @@ impl OPCode {
     pub(super) fn op_11011110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        let carry = if cpu.C() { 1 } else { 0 };
-        cpu.a = ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, carry);
+        let carry = if cpu.c() { 1 } else { 0 };
+        cpu.a = alu_helper(cpu, ALUOP::SUB, cpu.a, value, carry);
         2
     }
 }
@@ -221,15 +218,15 @@ impl OPCode {
     pub(super) fn op_10100xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[5..]);
         let value = *OPCode::get_register_by_index(index, cpu).unwrap();
-        cpu.a = ALU_helper(cpu, ALU_OP::AND, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::AND, cpu.a, value, 0);
         1
     }
 
     // AND (HL) 0b10100110
     pub(super) fn op_10100110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        cpu.a = ALU_helper(cpu, ALU_OP::AND, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::AND, cpu.a, value, 0);
         2
     }
 
@@ -237,7 +234,7 @@ impl OPCode {
     pub(super) fn op_11100110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        cpu.a = ALU_helper(cpu, ALU_OP::AND, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::AND, cpu.a, value, 0);
         2
     }
 
@@ -245,15 +242,15 @@ impl OPCode {
     pub(super) fn op_10110xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[5..]);
         let value = *OPCode::get_register_by_index(index, cpu).unwrap();
-        cpu.a = ALU_helper(cpu, ALU_OP::OR, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::OR, cpu.a, value, 0);
         1
     }
 
     // OR (HL) 0b10110110
     pub(super) fn op_10110110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        cpu.a = ALU_helper(cpu, ALU_OP::OR, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::OR, cpu.a, value, 0);
         2
     }
 
@@ -261,7 +258,7 @@ impl OPCode {
     pub(super) fn op_11110110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        cpu.a = ALU_helper(cpu, ALU_OP::OR, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::OR, cpu.a, value, 0);
         2
     }
 
@@ -269,15 +266,15 @@ impl OPCode {
     pub(super) fn op_10101xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[5..]);
         let value = *OPCode::get_register_by_index(index, cpu).unwrap();
-        cpu.a = ALU_helper(cpu, ALU_OP::XOR, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::XOR, cpu.a, value, 0);
         1
     }
 
     // XOR (HL) 0b10101110
     pub(super) fn op_10101110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        cpu.a = ALU_helper(cpu, ALU_OP::XOR, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::XOR, cpu.a, value, 0);
         2
     }
 
@@ -285,7 +282,7 @@ impl OPCode {
     pub(super) fn op_11101110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        cpu.a = ALU_helper(cpu, ALU_OP::XOR, cpu.a, value, 0);
+        cpu.a = alu_helper(cpu, ALUOP::XOR, cpu.a, value, 0);
         2
     }
 }
@@ -297,15 +294,15 @@ impl OPCode {
     pub(super) fn op_10111xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[5..]);
         let value = *OPCode::get_register_by_index(index, cpu).unwrap();
-        ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, 0);
+        alu_helper(cpu, ALUOP::SUB, cpu.a, value, 0);
         1
     }
 
     // CP (HL) 10111110
     pub(super) fn op_10111110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, 0);
+        alu_helper(cpu, ALUOP::SUB, cpu.a, value, 0);
         2
     }
 
@@ -313,7 +310,7 @@ impl OPCode {
     pub(super) fn op_11111110(cpu: &mut CPU) -> u8 {
         let value = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
-        ALU_helper(cpu, ALU_OP::SUB, cpu.a, value, 0);
+        alu_helper(cpu, ALUOP::SUB, cpu.a, value, 0);
         2
     }
 
@@ -324,16 +321,16 @@ impl OPCode {
             let register = OPCode::get_register_by_index(index, cpu).unwrap();
             *register
         };
-        let result = ALU_helper(cpu, ALU_OP::INC, value, 1, 0);
+        let result = alu_helper(cpu, ALUOP::INC, value, 1, 0);
         *OPCode::get_register_by_index(index, cpu).unwrap() = result;
         1
     }
 
     // INC (HL) 0b00110100
     pub(super) fn op_00110100(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        let result = ALU_helper(cpu, ALU_OP::INC, value, 1, 0);
+        let result = alu_helper(cpu, ALUOP::INC, value, 1, 0);
         cpu.memory_bus.write_byte(address, result);
         3
     }
@@ -345,65 +342,65 @@ impl OPCode {
             let register = OPCode::get_register_by_index(index, cpu).unwrap();
             *register
         };
-        let result = ALU_helper(cpu, ALU_OP::DEC, value, 1, 0);
+        let result = alu_helper(cpu, ALUOP::DEC, value, 1, 0);
         *OPCode::get_register_by_index(index, cpu).unwrap() = result;
         1
     }
 
     // DEC (HL) 0b00110101
     pub(super) fn op_00110101(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
-        let result = ALU_helper(cpu, ALU_OP::DEC, value, 1, 0);
+        let result = alu_helper(cpu, ALUOP::DEC, value, 1, 0);
         cpu.memory_bus.write_byte(address, result);
         3
     }
 
     // CCF 0b00111111
     pub(super) fn op_00111111(cpu: &mut CPU) -> u8 {
-        cpu.set_C(!cpu.C());
-        cpu.set_N(false);
-        cpu.set_H(false);
+        cpu.set_c(!cpu.c());
+        cpu.set_n(false);
+        cpu.set_h(false);
         1
     }
 
     // SCF 0b00110111
     pub(super) fn op_00110111(cpu: &mut CPU) -> u8 {
-        cpu.set_C(true);
-        cpu.set_N(false);
-        cpu.set_H(false);
+        cpu.set_c(true);
+        cpu.set_n(false);
+        cpu.set_h(false);
         1
     }
 
     // DAA 0b00100111
     pub(super) fn op_00100111(cpu: &mut CPU) -> u8 {
-        if cpu.N() {
+        if cpu.n() {
             let mut adjustment = 0;
-            if cpu.H() {
+            if cpu.h() {
                 adjustment += 0x06;
             }
-            if cpu.C() {
+            if cpu.c() {
                 adjustment += 0x60;
             }
-            let c_flag = cpu.C();
+            let c_flag = cpu.c();
             cpu.a = cpu.a.wrapping_sub(adjustment);
-            cpu.set_Z(cpu.a == 0);
-            cpu.set_H(false);
-            cpu.set_C(c_flag);
+            cpu.set_z(cpu.a == 0);
+            cpu.set_h(false);
+            cpu.set_c(c_flag);
         } else {
             let mut adjustment = 0;
-            if cpu.H() || (cpu.a & 0x0F) > 9 {
+            if cpu.h() || (cpu.a & 0x0F) > 9 {
                 adjustment += 0x06;
             }
-            if cpu.C() || cpu.a > 0x99 {
+            if cpu.c() || cpu.a > 0x99 {
                 adjustment += 0x60;
             }
-            let c_flag = cpu.C();
+            let c_flag = cpu.c();
             let a = cpu.a;
             cpu.a = cpu.a.wrapping_add(adjustment);
-            cpu.set_Z(cpu.a == 0);
-            cpu.set_H(false);
-            cpu.set_C(c_flag || a > 0x99);
+            cpu.set_z(cpu.a == 0);
+            cpu.set_h(false);
+            cpu.set_c(c_flag || a > 0x99);
         }
         1
     }
@@ -411,8 +408,8 @@ impl OPCode {
     // CPL 0b00101111
     pub(super) fn op_00101111(cpu: &mut CPU) -> u8 {
         cpu.a = !cpu.a;
-        cpu.set_N(true);
-        cpu.set_H(true);
+        cpu.set_n(true);
+        cpu.set_h(true);
         1
     }
 }
@@ -442,7 +439,7 @@ impl OPCode {
     pub(super) fn op_00xx1001(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let index = OPCode::concat_bits(&bits[2..4]);
         let rr = OPCode::get_16b_register_by_index(index, cpu);
-        let hl = cpu.HL();
+        let hl = cpu.hl();
 
         // let bits_for_num1 = OPCode::parse_bits_u16(hl);
         // let bits_for_num2 = OPCode::parse_bits_u16(rr);
@@ -458,8 +455,8 @@ impl OPCode {
         // // set flags
         // let sum = OPCode::concat_bits_u16(&result);
         let sum = hl.wrapping_add(rr);
-        cpu.set_HL(sum);
-        cpu.set_N(false);
+        cpu.set_hl(sum);
+        cpu.set_n(false);
         // if (carry_bits[11] == 1) {
         //     cpu.set_H(true);
         // } else {
@@ -471,8 +468,8 @@ impl OPCode {
         // } else {
         //     cpu.set_C(false);
         // }
-        cpu.set_C((u32::from(hl) + u32::from(rr)) > 0xFFFF);
-        cpu.set_H(((hl & 0x0FFF) + (rr & 0x0FFF)) > 0x0FFF);
+        cpu.set_c((u32::from(hl) + u32::from(rr)) > 0xFFFF);
+        cpu.set_h(((hl & 0x0FFF) + (rr & 0x0FFF)) > 0x0FFF);
         2
     }
 
@@ -488,10 +485,10 @@ impl OPCode {
         let c_flag = ((sp_low as u16) + (ee as u16)) > 0xFF;
         let result = (sp as i32) + (ee_i8 as i32);
         cpu.sp = result as u16;
-        cpu.set_Z(false);
-        cpu.set_N(false);
-        cpu.set_H(h_flag);
-        cpu.set_C(c_flag);
+        cpu.set_z(false);
+        cpu.set_n(false);
+        cpu.set_h(h_flag);
+        cpu.set_c(c_flag);
         4
     }
 }

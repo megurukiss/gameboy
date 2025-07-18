@@ -19,6 +19,12 @@ impl Timer {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.cycles_counter = 0;
+        self.last_called_time = None;
+        self.scale = 1.0;
+    }
+
     pub fn get_frequency(&self) -> u64 {
         self.frequency
     }

@@ -1,4 +1,4 @@
-use crate::cpu::CPU;
+use crate::core::CPU;
 use crate::opcodes::opcode::OPCode;
 
 impl OPCode {
@@ -9,10 +9,10 @@ impl OPCode {
         let value = cpu.a;
         let bit7 = value >> 7;
         cpu.a = (value << 1) | bit7;
-        cpu.set_C(bit7 == 1);
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_Z(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_z(false);
         1
     }
 
@@ -21,10 +21,10 @@ impl OPCode {
         let value = cpu.a;
         let bit0 = value & 1;
         cpu.a = (value >> 1) | (bit0 << 7);
-        cpu.set_C(bit0 == 1);
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_Z(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_z(false);
         1
     }
 
@@ -32,7 +32,7 @@ impl OPCode {
     pub(super) fn cb_op_00010111(cpu: &mut CPU) -> u8 {
         let value = cpu.a;
         let cflag = {
-            if cpu.C() {
+            if cpu.c() {
                 1u8
             } else {
                 0u8
@@ -40,10 +40,10 @@ impl OPCode {
         };
         let bit7 = value >> 7;
         cpu.a = (value << 1) | cflag;
-        cpu.set_C(bit7 == 1);
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_Z(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_z(false);
         1
     }
 
@@ -51,7 +51,7 @@ impl OPCode {
     pub(super) fn cb_op_00011111(cpu: &mut CPU) -> u8 {
         let value = cpu.a;
         let cflag = {
-            if cpu.C() {
+            if cpu.c() {
                 1u8
             } else {
                 0u8
@@ -59,12 +59,14 @@ impl OPCode {
         };
         let bit0 = value & 1;
         cpu.a = (value >> 1) | (cflag << 7);
-        cpu.set_C(bit0 == 1);
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_Z(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_z(false);
         1
     }
+
+    // RLC is the first 0xcb bit operation
 
     // RLC r 00000xxx
     pub(super) fn cb_op_00000xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
@@ -73,24 +75,24 @@ impl OPCode {
         let value = r.clone();
         let bit7 = value >> 7;
         *r = (value << 1) | bit7;
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit7 == 1);
-        cpu.set_Z(value == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_z(value == 0);
         2
     }
 
     // RLC (HL) 00000110
     pub(super) fn cb_op_00000110(cpu: &mut CPU) -> u8 {
-        let hl = cpu.HL();
+        let hl = cpu.hl();
         let value = cpu.memory_bus.read_byte(hl);
         let bit7 = value >> 7;
         let result = (value << 1) | bit7;
         cpu.memory_bus.write_byte(hl, result);
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit7 == 1);
-        cpu.set_Z(value == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_z(value == 0);
         4
     }
 
@@ -101,31 +103,31 @@ impl OPCode {
         let value = r.clone();
         let bit0 = value & 1;
         *r = (value >> 1) | (bit0 << 7);
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(value == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(value == 0);
         2
     }
 
     // RRC (HL) 00001110
     pub(super) fn cb_op_00001110(cpu: &mut CPU) -> u8 {
-        let hl = cpu.HL();
+        let hl = cpu.hl();
         let value = cpu.memory_bus.read_byte(hl);
         let bit0 = value & 1;
         let result = (value >> 1) | (bit0 << 7);
         cpu.memory_bus.write_byte(hl, result);
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(value == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(value == 0);
         4
     }
 
     // RL r 00010xxx
     pub(super) fn cb_op_00010xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let cflag = {
-            if cpu.C() {
+            if cpu.c() {
                 1u8
             } else {
                 0u8
@@ -141,21 +143,21 @@ impl OPCode {
             *r = (value << 1) | cflag;
             *r
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit7 == 1);
-        cpu.set_Z(res == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_z(res == 0);
         2
     }
 
     // RL (HL) 00010110
     pub(super) fn cb_op_00010110(cpu: &mut CPU) -> u8 {
         let value = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             cpu.memory_bus.read_byte(hl)
         };
         let cflag = {
-            if cpu.C() {
+            if cpu.c() {
                 1u8
             } else {
                 0u8
@@ -163,22 +165,22 @@ impl OPCode {
         };
         let bit7 = value >> 7;
         let res = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             let result = (value << 1) | cflag;
             cpu.memory_bus.write_byte(hl, result);
             result
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit7 == 1);
-        cpu.set_Z(res == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_z(res == 0);
         4
     }
 
     // RR r8 00011xxx
     pub(super) fn cb_op_00011xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let cflag = {
-            if cpu.C() {
+            if cpu.c() {
                 1u8
             } else {
                 0u8
@@ -195,21 +197,21 @@ impl OPCode {
             *r = (value >> 1) | (cflag << 7);
             *r
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(result == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(result == 0);
         2
     }
 
     // RR (HL) 00011110
     pub(super) fn cb_op_00011110(cpu: &mut CPU) -> u8 {
         let value = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             cpu.memory_bus.read_byte(hl)
         };
         let cflag = {
-            if cpu.C() {
+            if cpu.c() {
                 1u8
             } else {
                 0u8
@@ -217,15 +219,15 @@ impl OPCode {
         };
         let bit0 = value & 1;
         let res = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             let result = (value >> 1) | (cflag << 7);
             cpu.memory_bus.write_byte(hl, result);
             result
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(res == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(res == 0);
         4
     }
 
@@ -240,30 +242,30 @@ impl OPCode {
             *r = *r << 1;
             *r
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit7 == 1);
-        cpu.set_Z(res == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_z(res == 0);
         2
     }
 
     // SLA (HL) 00100110
     pub(super) fn cb_op_00100110(cpu: &mut CPU) -> u8 {
         let value = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             cpu.memory_bus.read_byte(hl)
         };
         let bit7 = value >> 7;
         let res = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             let result = value << 1;
             cpu.memory_bus.write_byte(hl, result);
             result
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit7 == 1);
-        cpu.set_Z(res == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit7 == 1);
+        cpu.set_z(res == 0);
         4
     }
 
@@ -281,17 +283,17 @@ impl OPCode {
             *r = (*r >> 1) | (bit7 << 7);
             *r
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(result == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(result == 0);
         2
     }
 
     // SRA (HL) 00101110
     pub(super) fn cb_op_00101110(cpu: &mut CPU) -> u8 {
         let value = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             cpu.memory_bus.read_byte(hl)
         };
         let (bit7, bit0) = {
@@ -299,15 +301,15 @@ impl OPCode {
             (value >> 7, value & 1)
         };
         let result = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             let result = (value >> 1) | (bit7 << 7);
             cpu.memory_bus.write_byte(hl, result);
             result
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(result == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(result == 0);
         4
     }
 
@@ -321,29 +323,29 @@ impl OPCode {
             *r = ((*r & 0xF0) >> 4) | ((*r & 0x0F) << 4);
             *r
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(false);
-        cpu.set_Z(result == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(false);
+        cpu.set_z(result == 0);
         2
     }
 
     // SWAP (HL) 00110110
     pub(super) fn cb_op_00110110(cpu: &mut CPU) -> u8 {
         let value = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             cpu.memory_bus.read_byte(hl)
         };
         let result = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             let result = ((value & 0xF0) >> 4) | ((value & 0x0F) << 4);
             cpu.memory_bus.write_byte(hl, result);
             result
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(false);
-        cpu.set_Z(result == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(false);
+        cpu.set_z(result == 0);
         4
     }
 
@@ -358,30 +360,30 @@ impl OPCode {
             *r = *r >> 1;
             *r
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(result == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(result == 0);
         2
     }
 
     // SRL (HL) 00111110
     pub(super) fn cb_op_00111110(cpu: &mut CPU) -> u8 {
         let value = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             cpu.memory_bus.read_byte(hl)
         };
         let bit0 = value & 1;
         let result = {
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             let result = value >> 1;
             cpu.memory_bus.write_byte(hl, result);
             result
         };
-        cpu.set_N(false);
-        cpu.set_H(false);
-        cpu.set_C(bit0 == 1);
-        cpu.set_Z(result == 0);
+        cpu.set_n(false);
+        cpu.set_h(false);
+        cpu.set_c(bit0 == 1);
+        cpu.set_z(result == 0);
         4
     }
 
@@ -395,9 +397,9 @@ impl OPCode {
         };
         // if selected bit is 0, set flag Z
         let bit_is_zero = (rvalue & (1 << bindex)) == 0;
-        cpu.set_Z(bit_is_zero);
-        cpu.set_N(false);
-        cpu.set_H(true);
+        cpu.set_z(bit_is_zero);
+        cpu.set_n(false);
+        cpu.set_h(true);
         2
     }
 
@@ -405,13 +407,13 @@ impl OPCode {
     pub(super) fn cb_op_01xxx110(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let (bindex, value) = {
             let bit_index = OPCode::concat_bits(&bits[2..5]);
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             (bit_index, cpu.memory_bus.read_byte(hl))
         };
         let bit_is_zero = (value & (1 << bindex)) == 0;
-        cpu.set_Z(bit_is_zero);
-        cpu.set_N(false);
-        cpu.set_H(true);
+        cpu.set_z(bit_is_zero);
+        cpu.set_n(false);
+        cpu.set_h(true);
         3
     }
 
@@ -431,11 +433,11 @@ impl OPCode {
     pub(super) fn cb_op_10xxx110(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let (bindex, value) = {
             let bit_index = OPCode::concat_bits(&bits[2..5]);
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             (bit_index, cpu.memory_bus.read_byte(hl))
         };
         let result = value & !(1 << bindex);
-        cpu.memory_bus.write_byte(cpu.HL(), result);
+        cpu.memory_bus.write_byte(cpu.hl(), result);
         4
     }
 
@@ -455,11 +457,11 @@ impl OPCode {
     pub(super) fn cb_op_11xxx110(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let (bindex, value) = {
             let bit_index = OPCode::concat_bits(&bits[2..5]);
-            let hl = cpu.HL();
+            let hl = cpu.hl();
             (bit_index, cpu.memory_bus.read_byte(hl))
         };
         let result = value | (1 << bindex);
-        cpu.memory_bus.write_byte(cpu.HL(), result);
+        cpu.memory_bus.write_byte(cpu.hl(), result);
         4
     }
 }

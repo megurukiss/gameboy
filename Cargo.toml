@@ -1,0 +1,9 @@
+
+[workspace]
+members = ["gb_core", "gb_frontend"]
+
+# Define shared dependencies for the entire workspace
+[workspace.dependencies]
+env_logger = "0.11.8"
+log = "0.4.27"
+test-log = "0.2.17"

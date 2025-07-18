@@ -1,4 +1,4 @@
-use crate::cpu::CPU;
+use crate::core::CPU;
 use crate::opcodes::opcode::OPCode;
 
 impl OPCode {
@@ -13,7 +13,7 @@ impl OPCode {
         } else {
             // ime disabled
             // check if any interrupts pending
-            if (cpu.IE() == 0) && (cpu.IF() == 0) {
+            if (cpu.ie() == 0) && (cpu.r#if() == 0) {
                 // no interrupts pending, As soon as an interrupt becomes pending, the CPU resumes execution. This is like the above, except that the handler is not called.
                 cpu.is_halted = true;
             } else {

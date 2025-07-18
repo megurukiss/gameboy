@@ -1,4 +1,4 @@
-use crate::cpu::CPU;
+use crate::core::CPU;
 use crate::opcodes::opcode::OPCode;
 
 impl OPCode {
@@ -29,7 +29,7 @@ impl OPCode {
 
     // LD r8, (HL) 0b01xxx110
     pub(super) fn op_01xxx110(cpu: &mut CPU, bits: &[u8]) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
         let dst = OPCode::get_register_by_index(OPCode::concat_bits(&bits[2..5]), cpu).unwrap();
         *dst = value;
@@ -38,7 +38,7 @@ impl OPCode {
 
     // LD (HL), r8 0b01110xxx
     pub(super) fn op_01110xxx(cpu: &mut CPU, bits: &[u8]) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let src_val = {
             let src = OPCode::get_register_by_index(OPCode::concat_bits(&bits[5..8]), cpu).unwrap();
             *src
@@ -49,7 +49,7 @@ impl OPCode {
 
     // LD (HL), n8 0b00110110
     pub(super) fn op_00110110(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let immediate = cpu.memory_bus.read_byte(cpu.pc);
         cpu.pc = cpu.pc.wrapping_add(1);
         cpu.memory_bus.write_byte(address, immediate);
@@ -140,40 +140,40 @@ impl OPCode {
 
     // LD A, (HL-) 0b00111010
     pub(super) fn op_00111010(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
         // decrement HL
-        cpu.set_HL(address.wrapping_sub(1));
+        cpu.set_hl(address.wrapping_sub(1));
         cpu.a = value;
         2
     }
 
     // LD (HL-), A 0b00110010
     pub(super) fn op_00110010(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.a;
         // decrement HL
-        cpu.set_HL(address.wrapping_sub(1));
+        cpu.set_hl(address.wrapping_sub(1));
         cpu.memory_bus.write_byte(address, value);
         2
     }
 
     // LD A, (HL+) 0b00101010
     pub(super) fn op_00101010(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.memory_bus.read_byte(address);
         // increment HL
-        cpu.set_HL(address.wrapping_add(1));
+        cpu.set_hl(address.wrapping_add(1));
         cpu.a = value;
         2
     }
 
     // LD (HL+), A 0b00100010
     pub(super) fn op_00100010(cpu: &mut CPU) -> u8 {
-        let address = cpu.HL();
+        let address = cpu.hl();
         let value = cpu.a;
         // increment HL
-        cpu.set_HL(address.wrapping_add(1));
+        cpu.set_hl(address.wrapping_add(1));
         cpu.memory_bus.write_byte(address, value);
         2
     }
@@ -201,7 +201,7 @@ impl OPCode {
 
     // LD SP, HL    0b11111001
     pub(super) fn op_11111001(cpu: &mut CPU) -> u8 {
-        cpu.sp = cpu.HL();
+        cpu.sp = cpu.hl();
         2
     }
 
@@ -231,13 +231,13 @@ impl OPCode {
         // compute SP+e and set flags
         let half_carry = ((cpu.sp & 0x0F) as u8).wrapping_add((e & 0x0F) as u8) > 0x0F;
         let carry = ((cpu.sp & 0xFF) as u16).wrapping_add(e as u16) > 0xFF;
-        cpu.set_Z(false);
-        cpu.set_N(false);
-        cpu.set_H(half_carry);
-        cpu.set_C(carry);
+        cpu.set_z(false);
+        cpu.set_n(false);
+        cpu.set_h(half_carry);
+        cpu.set_c(carry);
         // set HL
         let result = cpu.sp.wrapping_add(e as u16); // i8 as u16 = 2e16 + i8
-        cpu.set_HL(result);
+        cpu.set_hl(result);
         3
     }
 }

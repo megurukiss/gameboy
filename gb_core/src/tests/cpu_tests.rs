@@ -1,4 +1,4 @@
-use crate::cpu::CPU;
+use crate::core::CPU;
 use crate::opcodes::opcode::OPCode;
 
 #[test]
@@ -42,21 +42,21 @@ fn test_get_register_macro() {
 #[test]
 fn test_flags() {
     let mut cpu = CPU::new();
-    cpu.set_Z(true);
-    assert!(cpu.Z());
-    cpu.set_Z(false);
-    assert!(!cpu.Z());
-    cpu.set_N(true);
-    assert!(cpu.N());
+    cpu.set_z(true);
+    assert!(cpu.z());
+    cpu.set_z(false);
+    assert!(!cpu.z());
+    cpu.set_n(true);
+    assert!(cpu.n());
 
-    cpu.set_N(false);
-    assert!(!cpu.N());
-    cpu.set_H(true);
-    assert!(cpu.H());
-    cpu.set_H(false);
-    assert!(!cpu.H());
-    cpu.set_C(true);
-    assert!(cpu.C());
-    cpu.set_C(false);
-    assert!(!cpu.C());
+    cpu.set_n(false);
+    assert!(!cpu.n());
+    cpu.set_h(true);
+    assert!(cpu.h());
+    cpu.set_h(false);
+    assert!(!cpu.h());
+    cpu.set_c(true);
+    assert!(cpu.c());
+    cpu.set_c(false);
+    assert!(!cpu.c());
 }

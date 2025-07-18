@@ -1,12 +1,12 @@
-use crate::memory::*;
+use super::memory::*;
+use super::time::Timer;
 use crate::opcodes::OPCode;
-use crate::time::Timer;
 use std::time::{Duration, Instant};
 
 pub struct CPU {
     // Registers
     pub a: u8, // Flags
-    pub b: u8, 
+    pub b: u8,
     pub c: u8,
     pub d: u8,
     pub e: u8,
@@ -15,15 +15,14 @@ pub struct CPU {
     pub h: u8,
     pub l: u8,
     // Stack Pointer
-    pub pc: u16, pub sp: u16, pub ime: bool,
+    pub pc: u16,
+    pub sp: u16,
+    pub ime: bool,
     pub is_halted: bool,
     // Program Counter
     pub memory_bus: MemoryBus,
     pub timer: Timer,
 }
-
-struct ALU; // Arithmetic Logic Unit
-struct IDU; // Instruction Decode Unit
 
 impl CPU {
     pub fn new() -> Self {
@@ -45,6 +44,23 @@ impl CPU {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.a = 0;
+        self.f = 0;
+        self.b = 0;
+        self.c = 0;
+        self.d = 0;
+        self.e = 0;
+        self.h = 0;
+        self.l = 0;
+        self.sp = 0;
+        self.pc = 0;
+        self.ime = false;
+        self.is_halted = false;
+        self.timer.reset();
+        self.memory_bus.reset();
+    }
+
     pub fn bc(&self) -> u16 {
         (self.b as u16) << 8 | self.c as u16
     }
@@ -63,60 +79,60 @@ impl CPU {
         self.e = (value & 0x00FF) as u8;
     }
 
-    pub fn HL(&self) -> u16 {
+    pub fn hl(&self) -> u16 {
         (self.h as u16) << 8 | self.l as u16
     }
 
-    pub fn set_HL(&mut self, value: u16) {
+    pub fn set_hl(&mut self, value: u16) {
         self.h = ((value & 0xFF00) >> 8) as u8;
         self.l = (value & 0x00FF) as u8;
     }
 
-    pub fn set_SP(&mut self, value: u16) {
+    pub fn set_sp(&mut self, value: u16) {
         self.sp = value;
     }
 
     // set flags
-    pub fn set_Z(&mut self, value: bool) {
+    pub fn set_z(&mut self, value: bool) {
         match value {
             true => self.f |= 0b1000_0000,
             false => self.f &= 0b0111_1111,
         }
     }
-    pub fn Z(&self) -> bool {
+    pub fn z(&self) -> bool {
         self.f & 0b1000_0000 != 0
     }
 
     // N flag
-    pub fn set_N(&mut self, value: bool) {
+    pub fn set_n(&mut self, value: bool) {
         match value {
             true => self.f |= 0b0100_0000,
             false => self.f &= 0b1011_1111,
         }
     }
-    pub fn N(&self) -> bool {
+    pub fn n(&self) -> bool {
         self.f & 0b0100_0000 != 0
     }
 
     // H flag
-    pub fn set_H(&mut self, value: bool) {
+    pub fn set_h(&mut self, value: bool) {
         match value {
             true => self.f |= 0b0010_0000,
             false => self.f &= 0b1101_1111,
         }
     }
-    pub fn H(&self) -> bool {
+    pub fn h(&self) -> bool {
         self.f & 0b0010_0000 != 0
     }
 
     // C flag
-    pub fn set_C(&mut self, value: bool) {
+    pub fn set_c(&mut self, value: bool) {
         match value {
             true => self.f |= 0b0001_0000,
             false => self.f &= 0b1110_1111,
         }
     }
-    pub fn C(&self) -> bool {
+    pub fn c(&self) -> bool {
         self.f & 0b0001_0000 != 0
     }
 
@@ -128,12 +144,12 @@ impl CPU {
     }
 
     // get IF
-    pub fn IF(&self) -> u8 {
+    pub fn r#if(&self) -> u8 {
         self.memory_bus.read_byte(IF)
     }
 
     // get IE
-    pub fn IE(&self) -> u8 {
+    pub fn ie(&self) -> u8 {
         self.memory_bus.read_byte(IE)
     }
 
@@ -173,29 +189,47 @@ impl CPU {
     // be careful about CB prefix, if CB prefix encountered, fetch the next bit manipulation opcode.
     fn tick(&mut self) -> u64 {
         // TODO: Implement fetch-decode-execute cycle
-        if !self.is_halted {
-            // fetch and execute instruction
-            // fetch byte from pc
-            let (opcode, is_cb) = {
-                let first_byte = self.memory_bus.read_byte(self.PC);
-                self.PC += 1;
-                // if the first byte is 0xcb, then its a bit opcode
-                if first_byte == 0xcb {
-                    let second_byte = self.memory_bus.read_byte(self.PC);
-                    self.PC += 1;
-                    (second_byte, true)
+        let cycles = {
+            if !self.is_halted {
+                // fetch and execute instruction
+                // fetch byte from pc
+                let (opcode, is_cb, is_stop) = {
+                    let first_byte = self.memory_bus.read_byte(self.pc);
+                    self.pc += 1;
+                    // if the first byte is 0xcb, then its a bit opcode
+                    if first_byte == 0xcb {
+                        let second_byte = self.memory_bus.read_byte(self.pc);
+                        self.pc += 1;
+                        (second_byte, true, false)
+                    } else if first_byte == 0x10 {
+                        // execute stop instruction
+                        let second_byte = self.memory_bus.read_byte(self.pc);
+                        if second_byte == 0x00 {
+                            // update pc only when stop instruction encountered
+                            self.pc += 1;
+                            (0x10, false, true)
+                        } else {
+                            (first_byte, false, false)
+                        }
+                    } else {
+                        (first_byte, false, false)
+                    }
+                };
+
+                if is_stop {
+                    OPCode::exec_stop(self)
                 } else {
-                    (first_byte, false)
+                    OPCode::exec(self, opcode, is_cb)
                 }
-            };
-            OPCode::exec(self, opcode, is_cb);
-        } else {
-            // cpu halted
-        }
+            } else {
+                // cpu halted
+                0
+            }
+        };
 
         // check and handle interrupts
         // unset the is_halted when interrupt
         // when is_halted is set and ime = false, interrupt handler is not called.
-        0
+        cycles as u64
     }
 }

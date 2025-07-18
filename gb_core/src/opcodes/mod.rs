@@ -1,4 +1,4 @@
-mod ALU_instructions;
+mod alu_instructions;
 mod bit_instructions;
 mod control_flow_instructions;
 mod load_instructions;

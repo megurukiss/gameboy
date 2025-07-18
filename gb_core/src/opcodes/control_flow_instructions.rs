@@ -1,4 +1,4 @@
-use crate::cpu::CPU;
+use crate::core::CPU;
 use crate::opcodes::opcode::OPCode;
 
 impl OPCode {
@@ -15,7 +15,7 @@ impl OPCode {
 
     // JP HL 11101001
     pub(super) fn op_11101001(cpu: &mut CPU) -> u8 {
-        cpu.pc = cpu.HL();
+        cpu.pc = cpu.hl();
         1
     }
 
@@ -27,28 +27,28 @@ impl OPCode {
         match condition {
             0b00 => {
                 // NZ
-                if !cpu.Z() {
+                if !cpu.z() {
                     cpu.pc = target_address;
                     return 4;
                 }
             }
             0b01 => {
                 // Z
-                if cpu.Z() {
+                if cpu.z() {
                     cpu.pc = target_address;
                     return 4;
                 }
             }
             0b10 => {
                 // NC
-                if !cpu.C() {
+                if !cpu.c() {
                     cpu.pc = target_address;
                     return 4;
                 }
             }
             0b11 => {
                 // C
-                if cpu.C() {
+                if cpu.c() {
                     cpu.pc = target_address;
                     return 4;
                 }
@@ -77,28 +77,28 @@ impl OPCode {
         match condition {
             0b00 => {
                 // NZ
-                if !cpu.Z() {
+                if !cpu.z() {
                     cpu.pc = cpu.pc.wrapping_add(offset as u16);
                     return 3;
                 }
             }
             0b01 => {
                 // Z
-                if cpu.Z() {
+                if cpu.z() {
                     cpu.pc = cpu.pc.wrapping_add(offset as u16);
                     return 3;
                 }
             }
             0b10 => {
                 // NC
-                if !cpu.C() {
+                if !cpu.c() {
                     cpu.pc = cpu.pc.wrapping_add(offset as u16);
                     return 3;
                 }
             }
             0b11 => {
                 // C
-                if cpu.C() {
+                if cpu.c() {
                     cpu.pc = cpu.pc.wrapping_add(offset as u16);
                     return 3;
                 }
@@ -132,7 +132,7 @@ impl OPCode {
         match condition {
             0b00 => {
                 // NZ
-                if !cpu.Z() {
+                if !cpu.z() {
                     cpu.sp -= 2;
                     cpu.memory_bus.write_word(cpu.sp, cpu.pc);
                     // set PC to target address
@@ -142,7 +142,7 @@ impl OPCode {
             }
             0b01 => {
                 // Z
-                if cpu.Z() {
+                if cpu.z() {
                     cpu.sp -= 2;
                     cpu.memory_bus.write_word(cpu.sp, cpu.pc);
                     // set PC to target address
@@ -152,7 +152,7 @@ impl OPCode {
             }
             0b10 => {
                 // NC
-                if !cpu.C() {
+                if !cpu.c() {
                     cpu.sp -= 2;
                     cpu.memory_bus.write_word(cpu.sp, cpu.pc);
                     // set PC to target address
@@ -162,7 +162,7 @@ impl OPCode {
             }
             0b11 => {
                 // C
-                if cpu.C() {
+                if cpu.c() {
                     cpu.sp -= 2;
                     cpu.memory_bus.write_word(cpu.sp, cpu.pc);
                     // set PC to target address
@@ -189,10 +189,10 @@ impl OPCode {
     // RET cc 110xx000
     pub(super) fn op_110xx000(cpu: &mut CPU, bits: &[u8]) -> u8 {
         let condition = OPCode::concat_bits(&bits[3..5]);
-        if (condition == 0b00 && !cpu.Z())
-            || (condition == 0b01 && cpu.Z())
-            || (condition == 0b10 && !cpu.C())
-            || (condition == 0b11 && cpu.C())
+        if (condition == 0b00 && !cpu.z())
+            || (condition == 0b01 && cpu.z())
+            || (condition == 0b10 && !cpu.c())
+            || (condition == 0b11 && cpu.c())
         {
             let target = cpu.memory_bus.read_word(cpu.sp);
             cpu.sp += 2;

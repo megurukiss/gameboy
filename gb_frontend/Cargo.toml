@@ -3,5 +3,9 @@ name = "gb_frontend"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "gb_frontend"
+path = "src/main.rs"
+
 [dependencies]
 gb_core = { path = "../gb_core" }
