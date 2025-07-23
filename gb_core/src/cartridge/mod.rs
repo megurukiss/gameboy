@@ -6,10 +6,14 @@ use crate::core::Error;
 pub use interface::{Cartridge, CartridgeHeader};
 
 use log::debug;
+pub use mbc1::MBC1Cartridge;
 pub use rom_only::RomOnlyCartridge;
 use std::fs::File;
 use std::io::Read;
 use std::result::Result;
+
+// when reading to an undefined region, return open bus value
+pub const OPENBUS: u8 = 0xFF;
 
 pub fn read_file(path: &str) -> Result<Vec<u8>, Error> {
     let mut file = File::open(path)?;
@@ -18,27 +22,29 @@ pub fn read_file(path: &str) -> Result<Vec<u8>, Error> {
     Ok(buffer)
 }
 
+// TODO: support more cartridge types
 pub fn load_cartridge_from_file(path: &str) -> Result<Box<dyn Cartridge>, Error> {
     let bytes = read_file(path)?;
     // keep the owndership
     let header = CartridgeHeader::from_bytes(&bytes)?;
     debug!("{:?}", header);
     // match cartridge type
-    let cartridge = match header.cartridge_type {
-        0x00 => RomOnlyCartridge::from_bytes(bytes)?,
+    let cartridge: Box<dyn Cartridge> = match header.cartridge_type {
+        0x00 => Box::new(RomOnlyCartridge::from_bytes(bytes)?),
+        0x01 => Box::new(MBC1Cartridge::from_bytes(bytes)?),
         _ => return Err(Error::CartridgeTypeUnsupported),
     };
-    Ok(Box::new(cartridge))
+    Ok(cartridge)
 }
 
 #[macro_export]
 macro_rules! implement_cartridge_getters {
     () => {
-        fn get_rom(&self) -> &Vec<u8> {
+        fn get_rom(&self) -> &Vec<Vec<u8>> {
             &self.rom
         }
 
-        fn get_ram(&mut self) -> &mut Vec<u8> {
+        fn get_ram(&mut self) -> &mut Vec<Vec<u8>> {
             &mut self.ram
         }
 
@@ -110,10 +116,10 @@ pub mod tests {
         let file_path = "../cpu_instrs/cpu_instrs.gb";
         let mut cartridge = load_cartridge_from_file(file_path).unwrap();
         debug!("{:?}", cartridge.get_header());
-        debug!("{:?}", cartridge.get_rom().len());
+        debug!("{:?}", cartridge.get_rom()[0].len());
         debug!("{:?}", cartridge.get_ram().len());
         assert_eq!(
-            cartridge.get_rom().len(),
+            cartridge.get_rom()[0].len() * cartridge.get_rom().len(),
             cartridge.get_header().rom_size as usize
         );
         assert_eq!(

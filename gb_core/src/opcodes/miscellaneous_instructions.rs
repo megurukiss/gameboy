@@ -25,7 +25,7 @@ impl OPCode {
 
     // STOP 00010000 00000000
     pub(super) fn op_00010000_00000000(cpu: &mut CPU) -> u8 {
-        // TODO
+        // TODO: implement STOP instruction
 
         // STOP can trigger frequency change in GBC
 

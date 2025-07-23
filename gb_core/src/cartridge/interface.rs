@@ -22,8 +22,8 @@ pub trait Cartridge {
     where
         Self: Cartridge + Sized;
 
-    fn get_rom(&self) -> &Vec<u8>;
-    fn get_ram(&mut self) -> &mut Vec<u8>;
+    fn get_rom(&self) -> &Vec<Vec<u8>>;
+    fn get_ram(&mut self) -> &mut Vec<Vec<u8>>;
     fn get_header(&self) -> &CartridgeHeader;
 }
 

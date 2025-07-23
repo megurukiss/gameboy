@@ -1,13 +1,21 @@
+use crate::core::Error;
+use std::result::Result;
+
+const IO_REGISTERS_START: u16 = 0xFF00;
+const IO_REGISTERS_END: u16 = 0xFF7F;
+
 pub struct IOResgisters {
     // The registers used to control io.
     // memory map range from 0xFF00 - 0xFF7F
     boot_rom_enabled: u8, // 0xFF50
+    registers: Vec<u8>,   // 0xFF00 - 0xFF7F
 }
 
 impl IOResgisters {
     pub fn new() -> IOResgisters {
         IOResgisters {
             boot_rom_enabled: 0,
+            registers: vec![0; 0x7F],
         }
     }
 

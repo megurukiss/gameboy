@@ -2,6 +2,7 @@ use crate::cartridge::load_cartridge_from_file;
 use crate::core::{Error, CPU};
 use std::result::Result;
 
+// TODO: cpu updates controlled by frame rates.
 pub struct GameBoyApp {
     cpu: CPU,
 }
@@ -15,16 +16,34 @@ impl GameBoyApp {
         Ok(Self { cpu })
     }
 
-    pub fn load_cartridge(&mut self, path: &str) -> Result<(), Error> {
+    pub fn load_new_cartridge(&mut self, path: &str) -> Result<(), Error> {
         // reset cpu and memory
         self.cpu.reset();
         self.cpu
             .memory_bus
             .load_cartridge(load_cartridge_from_file(path)?);
+        self.boot();
         Ok(())
     }
 
-    pub fn run(&mut self) {}
+    pub fn boot(&mut self) {
+        // check cartridge is valid
+
+        // play di-ding sound
+
+        // set boot rom register to disable boot rom
+
+        // set pc
+        self.cpu.pc = 0x0100;
+    }
+
+    pub fn run(&mut self) {
+        // compute frame rate
+
+        // call cpu update
+
+        // update screen, draw screen
+    }
 }
 
 #[cfg(test)]

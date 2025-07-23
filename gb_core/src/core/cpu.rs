@@ -188,7 +188,6 @@ impl CPU {
     // fetch-decode-execute cycle, return cycles taken
     // be careful about CB prefix, if CB prefix encountered, fetch the next bit manipulation opcode.
     fn tick(&mut self) -> u64 {
-        // TODO: Implement fetch-decode-execute cycle
         let cycles = {
             if !self.is_halted {
                 // fetch and execute instruction
@@ -227,6 +226,7 @@ impl CPU {
             }
         };
 
+        // TODO: implement interrupt handler
         // check and handle interrupts
         // unset the is_halted when interrupt
         // when is_halted is set and ime = false, interrupt handler is not called.
