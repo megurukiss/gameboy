@@ -1,3 +1,5 @@
+use log::info;
+
 use super::memory::*;
 use super::time::Timer;
 use crate::opcodes::OPCode;
@@ -153,6 +155,7 @@ impl CPU {
         self.memory_bus.read_byte(IE)
     }
 
+    /*
     // compute elasped time and call update_cpu
     pub fn update(&mut self) {
         let now = Instant::now();
@@ -184,10 +187,11 @@ impl CPU {
             self.timer.update_cycles(delta_cycles);
         }
     }
+    */
 
     // fetch-decode-execute cycle, return cycles taken
     // be careful about CB prefix, if CB prefix encountered, fetch the next bit manipulation opcode.
-    fn tick(&mut self) -> u64 {
+    pub fn tick(&mut self) -> u32 {
         let cycles = {
             if !self.is_halted {
                 // fetch and execute instruction
@@ -215,6 +219,10 @@ impl CPU {
                     }
                 };
 
+                info!(
+                    "fetched opcode {:02x}, is_cb: {:?}, is_stop: {:?}, pc: {:04x}",
+                    opcode, is_cb, is_stop, self.pc
+                );
                 if is_stop {
                     OPCode::exec_stop(self)
                 } else {
@@ -230,6 +238,8 @@ impl CPU {
         // check and handle interrupts
         // unset the is_halted when interrupt
         // when is_halted is set and ime = false, interrupt handler is not called.
-        cycles as u64
+
+        // return t cycles
+        (cycles * 4) as u32
     }
 }

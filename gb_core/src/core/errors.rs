@@ -9,6 +9,8 @@ pub enum Error {
     CartridgeAddressError,
     CartridgeTypeUnsupported,
     IO(io::Error),
+    IORegisterAddressError,
+    VRAMAddressError,
 }
 
 impl From<io::Error> for Error {
@@ -26,6 +28,8 @@ impl fmt::Display for Error {
             Error::CartridgeFileHeaderError => write!(f, "The Cartridge File Header is invalid"),
             Error::CartridgeAddressError => write!(f, "The Cartridge Address is invalid"),
             Error::CartridgeTypeUnsupported => write!(f, "The Cartridge Type is not supported"),
+            Error::IORegisterAddressError => write!(f, "The IO Register Address is invalid"),
+            Error::VRAMAddressError => write!(f, "The VRAM Address is invalid"),
             // _ => write!(f, "Unknown Error"),
         }
     }

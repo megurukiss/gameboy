@@ -308,7 +308,7 @@ impl OPCode {
 
                 // --- control flow ---
                 // JP nn 11000011
-                [1, 1, 0, 0, 0, 1, 1, 1] => OPCode::op_11000011(cpu),
+                [1, 1, 0, 0, 0, 0, 1, 1] => OPCode::op_11000011(cpu),
 
                 // JP HL 11101001
                 [1, 1, 1, 0, 1, 0, 0, 1] => OPCode::op_11101001(cpu),
@@ -435,7 +435,7 @@ impl OPCode {
 
     // TODO: execute the stop instruction
     pub fn exec_stop(cpu: &mut CPU) -> u8 {
-        0
+        unimplemented!()
     }
 }
 

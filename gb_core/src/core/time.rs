@@ -1,6 +1,8 @@
 use std::time::{Duration, Instant};
 
 pub const DEFAULT_TIMER_FREQUENCY: u64 = 4_194_304;
+pub const DEFAULT_FPS: f64 = 59.73;
+pub const CYCLES_PER_FRAME: u32 = 70224;
 
 pub struct Timer {
     frequency: u64,

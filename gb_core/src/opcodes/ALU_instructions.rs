@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::core::CPU;
 use crate::opcodes::opcode::OPCode;
 
@@ -316,7 +318,9 @@ impl OPCode {
 
     // INC r 0b00xxx100
     pub(super) fn op_00xxx100(cpu: &mut CPU, bits: &[u8]) -> u8 {
-        let index = OPCode::concat_bits(&bits[3..]);
+        let index = OPCode::concat_bits(&bits[2..5]);
+        // debug!("index {}", index);
+
         let value = {
             let register = OPCode::get_register_by_index(index, cpu).unwrap();
             *register
@@ -337,7 +341,7 @@ impl OPCode {
 
     // DEC r 0b00xxx101
     pub(super) fn op_00xxx101(cpu: &mut CPU, bits: &[u8]) -> u8 {
-        let index = OPCode::concat_bits(&bits[3..]);
+        let index = OPCode::concat_bits(&bits[2..5]);
         let value = {
             let register = OPCode::get_register_by_index(index, cpu).unwrap();
             *register
